@@ -1,0 +1,440 @@
+[2m01:37:01[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mReferenceError[22m: getInitialCamera is not defined
+[39m > src/App.tsx:98:53
+    96 |    const [selectedAction, setSelectedAction] = useState<ActionType | null>(null);
+    97 |    const [mode, setMode] = useState<Mode>('planning');
+    98 |    const [camera, setCamera] = useState<Camera>(() => getInitialCamera(boardBounds));
+       |                                                       ^
+    99 |    const [isDraggingBoard, setIsDraggingBoard] = useState(false);
+    100|    const [effects, setEffects] = useState<VisualEffect[]>([]);
+ > mountStateImpl node_modules/react-dom/cjs/react-dom-client.development.js:8268:23
+ > mountState node_modules/react-dom/cjs/react-dom-client.development.js:8289:21
+ > Object.useState node_modules/react-dom/cjs/react-dom-client.development.js:26243:17
+ > exports.useState node_modules/react/cjs/react.development.js:1263:33
+ > App src/App.tsx:98:30
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+ > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:17
+
+[2m01:37:01[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <App> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m01:58:01[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mReferenceError[22m: actionCards is not defined
+[39m > App src/App.tsx:500:11
+    498 |  
+    499 |          <div className="card-row">
+    500 |            {actionCards.map((card) => {
+        |             ^
+    501 |              const isAvailable = availableActions.includes(card.type);
+    502 |              return (
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+ > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:17
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > performUnitOfWork node_modules/react-dom/cjs/react-dom-client.development.js:17641:21
+ > workLoopSync node_modules/react-dom/cjs/react-dom-client.development.js:17469:40
+ > renderRootSync node_modules/react-dom/cjs/react-dom-client.development.js:17450:10
+ > performWorkOnRoot node_modules/react-dom/cjs/react-dom-client.development.js:16583:34
+
+[2m01:58:01[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <App> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m01:58:16[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mReferenceError[22m: actionCards is not defined
+[39m > App src/App.tsx:502:11
+    500 |  
+    501 |          <div className="card-row">
+    502 |            {actionCards.map((card) => {
+        |             ^
+    503 |              const isAvailable = availableActions.includes(card.type);
+    504 |              return (
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+ > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:17
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > performUnitOfWork node_modules/react-dom/cjs/react-dom-client.development.js:17641:21
+ > workLoopSync node_modules/react-dom/cjs/react-dom-client.development.js:17469:40
+ > renderRootSync node_modules/react-dom/cjs/react-dom-client.development.js:17450:10
+ > performWorkOnRoot node_modules/react-dom/cjs/react-dom-client.development.js:16583:34
+
+[2m01:58:16[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <App> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m01:58:31[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mReferenceError[22m: actionCards is not defined
+[39m > App src/App.tsx:503:11
+    501 |  
+    502 |          <div className="card-row">
+    503 |            {actionCards.map((card) => {
+        |             ^
+    504 |              const isAvailable = availableActions.includes(card.type);
+    505 |              return (
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+ > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:17
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > performUnitOfWork node_modules/react-dom/cjs/react-dom-client.development.js:17641:21
+ > workLoopSync node_modules/react-dom/cjs/react-dom-client.development.js:17469:40
+ > renderRootSync node_modules/react-dom/cjs/react-dom-client.development.js:17450:10
+ > performWorkOnRoot node_modules/react-dom/cjs/react-dom-client.development.js:16583:34
+
+[2m01:58:31[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <App> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m01:58:35[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mReferenceError[22m: buildActionHand is not defined
+[39m > src/App.tsx:119:35
+    117 |      [preview.state],
+    118 |    );
+    119 |    const actionHand = useMemo(() => buildActionHand(preview.state), [preview.state]);
+        |                                     ^
+    120 |    const renderedCards = useMemo(
+    121 |      () => [...actionHand, ...exitingCards],
+ > mountMemo node_modules/react-dom/cjs/react-dom-client.development.js:8777:22
+ > Object.useMemo node_modules/react-dom/cjs/react-dom-client.development.js:26216:17
+ > exports.useMemo node_modules/react/cjs/react.development.js:1251:33
+ > App src/App.tsx:119:21
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+ > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:17
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+
+[2m01:58:35[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <App> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m01:58:45[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mReferenceError[22m: buildActionHand is not defined
+[39m > src/App.tsx:119:35
+    117 |      [preview.state],
+    118 |    );
+    119 |    const actionHand = useMemo(() => buildActionHand(preview.state), [preview.state]);
+        |                                     ^
+    120 |    const renderedCards = useMemo(
+    121 |      () => [...actionHand, ...exitingCards],
+ > mountMemo node_modules/react-dom/cjs/react-dom-client.development.js:8777:22
+ > Object.useMemo node_modules/react-dom/cjs/react-dom-client.development.js:26216:17
+ > exports.useMemo node_modules/react/cjs/react.development.js:1251:33
+ > App src/App.tsx:119:21
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+ > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:17
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+
+[2m01:58:45[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <App> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m01:59:01[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mReferenceError[22m: buildActionHand is not defined
+[39m > src/App.tsx:119:35
+    117 |      [preview.state],
+    118 |    );
+    119 |    const actionHand = useMemo(() => buildActionHand(preview.state), [preview.state]);
+        |                                     ^
+    120 |    const renderedCards = useMemo(
+    121 |      () => [...actionHand, ...exitingCards],
+ > mountMemo node_modules/react-dom/cjs/react-dom-client.development.js:8777:22
+ > Object.useMemo node_modules/react-dom/cjs/react-dom-client.development.js:26216:17
+ > exports.useMemo node_modules/react/cjs/react.development.js:1251:33
+ > App src/App.tsx:119:21
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+ > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:17
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+
+[2m01:59:01[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <App> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m01:59:07[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mReferenceError[22m: buildActionHand is not defined
+[39m > src/App.tsx:119:35
+    117 |      [preview.state],
+    118 |    );
+    119 |    const actionHand = useMemo(() => buildActionHand(preview.state), [preview.state]);
+        |                                     ^
+    120 |    const renderedCards = useMemo(
+    121 |      () => [...actionHand, ...exitingCards],
+ > mountMemo node_modules/react-dom/cjs/react-dom-client.development.js:8777:22
+ > Object.useMemo node_modules/react-dom/cjs/react-dom-client.development.js:26216:17
+ > exports.useMemo node_modules/react/cjs/react.development.js:1251:33
+ > App src/App.tsx:119:21
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+ > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:17
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+
+[2m01:59:07[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <App> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m01:59:20[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mReferenceError[22m: buildActionHand is not defined
+[39m > src/App.tsx:119:35
+    117 |      [preview.state],
+    118 |    );
+    119 |    const actionHand = useMemo(() => buildActionHand(preview.state), [preview.state]);
+        |                                     ^
+    120 |    const renderedCards = useMemo(
+    121 |      () => [...actionHand, ...exitingCards],
+ > mountMemo node_modules/react-dom/cjs/react-dom-client.development.js:8777:22
+ > Object.useMemo node_modules/react-dom/cjs/react-dom-client.development.js:26216:17
+ > exports.useMemo node_modules/react/cjs/react.development.js:1251:33
+ > App src/App.tsx:119:21
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+ > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:17
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+
+[2m01:59:20[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <App> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m01:59:38[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mReferenceError[22m: buildActionHand is not defined
+[39m > src/App.tsx:119:35
+    117 |      [preview.state],
+    118 |    );
+    119 |    const actionHand = useMemo(() => buildActionHand(preview.state), [preview.state]);
+        |                                     ^
+    120 |    const renderedCards = useMemo(
+    121 |      () => [...actionHand, ...exitingCards],
+ > mountMemo node_modules/react-dom/cjs/react-dom-client.development.js:8777:22
+ > Object.useMemo node_modules/react-dom/cjs/react-dom-client.development.js:26216:17
+ > exports.useMemo node_modules/react/cjs/react.development.js:1251:33
+ > App src/App.tsx:119:21
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+ > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:17
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+
+[2m01:59:38[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <App> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m02:11:58[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mThe final argument passed to useEffect changed size between renders. The order and size of this array must remain constant.
+
+Previous: [[object Object],[object Object],[object Object], , true, 5, move,sword,wait]
+Incoming: [[object Object],[object Object],[object Object], , true, 5, move,sword,wait, planning, 75]
+[2m03:15:57[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mReferenceError[22m: PLAYER_IDLE_SPRITE is not defined
+[39m > AnimatedToken src/App.tsx:727:18
+    725 |            <image
+    726 |              className="player-sprite"
+    727 |              href={PLAYER_IDLE_SPRITE}
+        |                    ^
+    728 |              x="-18"
+    729 |              y="-26"
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+ > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:17
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > performUnitOfWork node_modules/react-dom/cjs/react-dom-client.development.js:17641:21
+ > workLoopSync node_modules/react-dom/cjs/react-dom-client.development.js:17469:40
+ > renderRootSync node_modules/react-dom/cjs/react-dom-client.development.js:17450:10
+ > performWorkOnRoot node_modules/react-dom/cjs/react-dom-client.development.js:16583:34
+
+[2m03:15:57[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <AnimatedToken> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m03:16:08[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mReferenceError[22m: PLAYER_IDLE_SPRITE is not defined
+[39m > AnimatedToken src/App.tsx:751:18
+    749 |            <image
+    750 |              className="player-sprite"
+    751 |              href={PLAYER_IDLE_SPRITE}
+        |                    ^
+    752 |              x="-18"
+    753 |              y="-26"
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+ > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:17
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > performUnitOfWork node_modules/react-dom/cjs/react-dom-client.development.js:17641:21
+ > workLoopSync node_modules/react-dom/cjs/react-dom-client.development.js:17469:40
+ > renderRootSync node_modules/react-dom/cjs/react-dom-client.development.js:17450:10
+ > performWorkOnRoot node_modules/react-dom/cjs/react-dom-client.development.js:16583:34
+
+[2m03:16:08[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <AnimatedToken> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m04:14:33[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mReferenceError[22m: CardBadge is not defined
+[39m > src/App.tsx:658:31
+    656 |                >
+    657 |                  <img className="card-art" src={card.image} alt="" draggable={false} />
+    658 |                  {card.badge ? <CardBadge type={card.badge} /> : null}
+        |                                 ^
+    659 |                  {shortcutLabel ? <span className="card-shortcut">{shortcutLabel}</span> : null}
+    660 |                </button>
+ > App src/App.tsx:635:25
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+ > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:17
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > performUnitOfWork node_modules/react-dom/cjs/react-dom-client.development.js:17641:21
+ > workLoopSync node_modules/react-dom/cjs/react-dom-client.development.js:17469:40
+
+[2m04:14:33[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <App> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m04:26:16[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mReferenceError[22m: dealSwordCardsForCycle is not defined
+[39m > src/App.tsx:119:4
+    117 |    const [exitingCards, setExitingCards] = useState<ActionCard[]>([]);
+    118 |    const [availableSwordCardIds, setAvailableSwordCardIds] = useState<string[]>(() =>
+    119 |      dealSwordCardsForCycle(game),
+        |      ^
+    120 |    );
+    121 |    const [playerAnimation, setPlayerAnimation] = useState<PlayerAnimation>('idle');
+ > mountStateImpl node_modules/react-dom/cjs/react-dom-client.development.js:8268:23
+ > mountState node_modules/react-dom/cjs/react-dom-client.development.js:8289:21
+ > Object.useState node_modules/react-dom/cjs/react-dom-client.development.js:26243:17
+ > exports.useState node_modules/react/cjs/react.development.js:1263:33
+ > App src/App.tsx:118:60
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+ > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:17
+
+[2m04:26:16[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <App> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m04:26:24[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mReferenceError[22m: dealSwordCardsForCycle is not defined
+[39m > src/App.tsx:119:4
+    117 |    const [exitingCards, setExitingCards] = useState<ActionCard[]>([]);
+    118 |    const [availableSwordCardIds, setAvailableSwordCardIds] = useState<string[]>(() =>
+    119 |      dealSwordCardsForCycle(game),
+        |      ^
+    120 |    );
+    121 |    const [playerAnimation, setPlayerAnimation] = useState<PlayerAnimation>('idle');
+ > mountStateImpl node_modules/react-dom/cjs/react-dom-client.development.js:8268:23
+ > mountState node_modules/react-dom/cjs/react-dom-client.development.js:8289:21
+ > Object.useState node_modules/react-dom/cjs/react-dom-client.development.js:26243:17
+ > exports.useState node_modules/react/cjs/react.development.js:1263:33
+ > App src/App.tsx:118:60
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+ > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:17
+
+[2m04:26:24[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <App> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m04:26:32[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mReferenceError[22m: dealSwordCardsForCycle is not defined
+[39m > src/App.tsx:119:4
+    117 |    const [exitingCards, setExitingCards] = useState<ActionCard[]>([]);
+    118 |    const [availableSwordCardIds, setAvailableSwordCardIds] = useState<string[]>(() =>
+    119 |      dealSwordCardsForCycle(game),
+        |      ^
+    120 |    );
+    121 |    const [playerAnimation, setPlayerAnimation] = useState<PlayerAnimation>('idle');
+ > mountStateImpl node_modules/react-dom/cjs/react-dom-client.development.js:8268:23
+ > mountState node_modules/react-dom/cjs/react-dom-client.development.js:8289:21
+ > Object.useState node_modules/react-dom/cjs/react-dom-client.development.js:26243:17
+ > exports.useState node_modules/react/cjs/react.development.js:1263:33
+ > App src/App.tsx:118:60
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+ > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:17
+
+[2m04:26:32[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <App> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m04:35:37[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mTypeError[22m: Cannot read properties of undefined (reading 'map')
+[39m > cloneGameState src/game.ts:125:35
+    123 |      })),
+    124 |      stones: state.stones.map((stone) => ({ ...stone })),
+    125 |      trampolines: state.trampolines.map((trampoline) => ({ ...trampoline })),
+        |                                     ^
+    126 |    };
+    127 |  }
+ > getPlanPreview src/game.ts:303:16
+ > src/App.tsx:133:32
+ > updateMemo node_modules/react-dom/cjs/react-dom-client.development.js:8795:18
+ > Object.useMemo node_modules/react-dom/cjs/react-dom-client.development.js:26484:17
+ > exports.useMemo node_modules/react/cjs/react.development.js:1251:33
+ > App src/App.tsx:133:18
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+
+[2m04:35:37[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <App> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m04:35:45[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mTypeError[22m: Cannot read properties of undefined (reading 'map')
+[39m > cloneGameState src/game.ts:125:35
+    123 |      })),
+    124 |      stones: state.stones.map((stone) => ({ ...stone })),
+    125 |      trampolines: state.trampolines.map((trampoline) => ({ ...trampoline })),
+        |                                     ^
+    126 |    };
+    127 |  }
+ > getPlanPreview src/game.ts:317:16
+ > src/App.tsx:133:32
+ > mountMemo node_modules/react-dom/cjs/react-dom-client.development.js:8777:22
+ > Object.useMemo node_modules/react-dom/cjs/react-dom-client.development.js:26216:17
+ > exports.useMemo node_modules/react/cjs/react.development.js:1251:33
+ > App src/App.tsx:133:18
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+
+[2m04:35:45[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <App> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m04:36:01[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mTypeError[22m: Cannot read properties of undefined (reading 'map')
+[39m > cloneGameState src/game.ts:125:35
+    123 |      })),
+    124 |      stones: state.stones.map((stone) => ({ ...stone })),
+    125 |      trampolines: state.trampolines.map((trampoline) => ({ ...trampoline })),
+        |                                     ^
+    126 |    };
+    127 |  }
+ > getPlanPreview src/game.ts:326:16
+ > src/App.tsx:133:32
+ > mountMemo node_modules/react-dom/cjs/react-dom-client.development.js:8777:22
+ > Object.useMemo node_modules/react-dom/cjs/react-dom-client.development.js:26216:17
+ > exports.useMemo node_modules/react/cjs/react.development.js:1251:33
+ > App src/App.tsx:133:18
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+
+[2m04:36:01[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <App> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
