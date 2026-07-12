@@ -577,6 +577,14 @@ button {
   pointer-events: none;
 }
 
+.arc-move-token {
+  pointer-events: none;
+}
+
+.arc-move-shadow {
+  fill: rgba(0, 0, 0, 0.3);
+}
+
 .unit-hitbox {
   fill: transparent;
   pointer-events: all;
@@ -589,6 +597,12 @@ button {
 .player-sprite {
   image-rendering: pixelated;
   overflow: visible;
+}
+
+.enemy-sprite {
+  image-rendering: pixelated;
+  overflow: visible;
+  pointer-events: none;
 }
 
 .unit-token.enemy-goblin .unit-body {
@@ -748,6 +762,19 @@ button {
 
 .attack-effect.fireball circle {
   fill: rgba(255, 177, 61, 0.18);
+}
+
+.arrow-trajectory-effect {
+  pointer-events: none;
+}
+
+.arrow-trajectory-effect line {
+  stroke: rgba(236, 246, 255, 0.92);
+  stroke-dasharray: 3 2;
+  stroke-linecap: round;
+  stroke-width: 1.8;
+  filter: drop-shadow(0 0 4px rgba(120, 190, 255, 0.7));
+  animation: strike-line 520ms ease-out forwards;
 }
 
 .sword-flash-effect {

@@ -39,8 +39,8 @@ import {
   hasEnemyAt,
   hasTrampolineAt,
   hexDistance,
-  isLegalDevTarget,
-  isLegalTarget,
+  isLegalDevPlanningTarget,
+  isLegalPlanningTarget,
   neighbors,
   sameCoord,
 } from './game';
@@ -53,24 +53,74 @@ const TOKEN_ANIMATION_MS = PLAYER_ACTION_MS;
 const MIN_ZOOM = 0.75;
 const MAX_ZOOM = 4.5;
 const MAX_HAND_SIZE = 10;
+const PLAYER_SPRITE_SIZE = 48;
+const PLAYER_SPRITE_BASELINE_Y = 15;
+const ENEMY_SPRITE_SIZE = 31;
+const ENEMY_SPRITE_BASELINE_Y = 7;
+const MAGE_SPRITE_SIZE = ENEMY_SPRITE_SIZE * 1.2;
+const CAVALRY_SPRITE_SIZE = ENEMY_SPRITE_SIZE * 2;
+const CAVALRY_SPRITE_OFFSET = { x: -3, y: 15 };
 const SWORD_CARD_IDS = ['sword-1', 'sword-2'];
 const UNLOCKED_LEVEL_STORAGE_KEY = 'fight-planner-unlocked-level';
 // DEV: set to false or remove the panel block to hide the all-cards test controls.
 const DEV_ALL_CARDS_ENABLED = true;
 
 type Mode = 'planning' | 'simulating';
-type PlayerAnimation = 'idle' | 'step' | 'sword' | 'throw' | 'pickup' | 'damage' | 'jump' | 'pogo';
+type PlayerAnimation =
+  | 'idle'
+  | 'step'
+  | 'sword'
+  | 'doubleSword'
+  | 'throw'
+  | 'pickup'
+  | 'damage'
+  | 'jump'
+  | 'pogo';
+type EnemyAnimation = 'idle' | 'walk' | 'jump' | 'attack' | 'pickup' | 'throw';
 type GridFeatureType = 'stone' | 'trampoline' | 'pogo' | 'trapPickup' | 'placedTrap';
 
 const playerSprites: Record<PlayerAnimation, string> = {
   idle: '/sprites/playeridle.gif',
   step: '/sprites/step.gif',
   sword: '/sprites/swordswing.gif',
+  doubleSword: '/sprites/doublesword.gif',
   throw: '/sprites/stonethrow.gif',
   pickup: '/sprites/pickup.gif',
   damage: '/sprites/takedamage.gif',
   jump: '/sprites/jump.gif',
-  pogo: '/sprites/exampleaction.gif',
+  pogo: '/sprites/pogojump.gif',
+};
+
+const enemySprites: Partial<Record<EnemyState['kind'], Partial<Record<EnemyAnimation, string>>>> = {
+  goblin: {
+    idle: '/sprites/goblinidle.gif',
+    walk: '/sprites/goblinwalk.gif',
+    jump: '/sprites/goblinjump.gif',
+    attack: '/sprites/goblinattack.gif',
+  },
+  gnome: {
+    idle: '/sprites/gnomeidle.gif',
+    walk: '/sprites/gnomewalk.gif',
+    jump: '/sprites/gnomejump.gif',
+    pickup: '/sprites/gnomepickup.gif',
+    throw: '/sprites/gnomestonethrow.gif',
+  },
+  skeletonArcher: {
+    idle: '/sprites/skeletonidle.gif',
+    walk: '/sprites/skeletonwalk.gif',
+    jump: '/sprites/skeletonjump.gif',
+    attack: '/sprites/skeletonattack.gif',
+  },
+  orc: {
+    idle: '/sprites/calvidle.gif',
+    walk: '/sprites/calvwalk.gif',
+    attack: '/sprites/calvattack.gif',
+  },
+  mage: {
+    idle: '/sprites/wizzidle.gif',
+    walk: '/sprites/wizzwalk.gif',
+    attack: '/sprites/wizzattack.gif',
+  },
 };
 
 const gridFeatureArt: Record<GridFeatureType, string | null> = {
@@ -136,7 +186,7 @@ interface DragState {
 
 interface VisualEffect {
   id: string;
-  type: 'swordFlash' | 'impact' | 'enemyAttack' | 'fireball' | 'pickup' | 'wait';
+  type: 'swordFlash' | 'impact' | 'enemyAttack' | 'arrowTrail' | 'fireball' | 'pickup' | 'wait';
   coord: Coord;
   source?: Coord;
 }
@@ -146,6 +196,16 @@ interface ProjectileEffect {
   from: Coord;
   to: Coord;
   targets?: Coord[];
+}
+
+interface ArcMoveEffect {
+  id: string;
+  from: Coord;
+  to: Coord;
+  variant: 'player' | 'enemy';
+  enemyId?: string;
+  enemyKind?: EnemyState['kind'];
+  sprite?: string;
 }
 
 type PlannedActionTraceType = Extract<ActionType, 'sword' | 'doubleSword' | 'throw' | 'trap'>;
@@ -203,6 +263,38 @@ function getActionTargets(action: PlannedAction): Coord[] {
   return action.target ? [action.target] : [];
 }
 
+function getEnemySprite(
+  enemyKind: EnemyState['kind'] | undefined,
+  animation: EnemyAnimation = 'idle',
+): string | undefined {
+  const sprites = enemyKind ? enemySprites[enemyKind] : undefined;
+  return sprites?.[animation] ?? sprites?.idle;
+}
+
+function getEnemySpriteLayout(enemyKind: EnemyState['kind'] | undefined) {
+  if (enemyKind === 'orc') {
+    return {
+      size: CAVALRY_SPRITE_SIZE,
+      x: -CAVALRY_SPRITE_SIZE / 2 + CAVALRY_SPRITE_OFFSET.x,
+      y: ENEMY_SPRITE_BASELINE_Y - CAVALRY_SPRITE_SIZE + CAVALRY_SPRITE_OFFSET.y,
+    };
+  }
+
+  if (enemyKind === 'mage') {
+    return {
+      size: MAGE_SPRITE_SIZE,
+      x: -MAGE_SPRITE_SIZE / 2,
+      y: ENEMY_SPRITE_BASELINE_Y - MAGE_SPRITE_SIZE,
+    };
+  }
+
+  return {
+    size: ENEMY_SPRITE_SIZE,
+    x: -ENEMY_SPRITE_SIZE / 2,
+    y: ENEMY_SPRITE_BASELINE_Y - ENEMY_SPRITE_SIZE,
+  };
+}
+
 export function App() {
   const cells = useMemo(() => getAllCells(), []);
   const boardBounds = useMemo(() => getBoardBounds(cells), [cells]);
@@ -222,8 +314,10 @@ export function App() {
     dealSwordCardsForCycle(game),
   );
   const [playerAnimation, setPlayerAnimation] = useState<PlayerAnimation>('idle');
+  const [enemyAnimations, setEnemyAnimations] = useState<Record<string, EnemyAnimation>>({});
   const [effects, setEffects] = useState<VisualEffect[]>([]);
   const [projectile, setProjectile] = useState<ProjectileEffect | null>(null);
+  const [arcMove, setArcMove] = useState<ArcMoveEffect | null>(null);
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [status, setStatus] = useState('Zaplanuj 5 akcji');
   const [maxUnlockedLevel, setMaxUnlockedLevel] = useState(() => readUnlockedLevel());
@@ -430,6 +524,21 @@ export function App() {
     }, duration);
   }
 
+  function playEnemyAnimation(enemyId: string, animation: EnemyAnimation, duration = PLAYER_ACTION_MS) {
+    setEnemyAnimations((current) => ({ ...current, [enemyId]: animation }));
+    window.setTimeout(() => {
+      setEnemyAnimations((current) => {
+        if (current[enemyId] !== animation) {
+          return current;
+        }
+
+        const next = { ...current };
+        delete next[enemyId];
+        return next;
+      });
+    }, duration);
+  }
+
   function addPlannedAction(
     type: ActionType,
     target?: Coord,
@@ -447,8 +556,8 @@ export function App() {
 
     if (target) {
       const isValidTarget = devOverride
-        ? isLegalDevTarget(preview.state, type, target)
-        : isLegalTarget(preview.state, type, target);
+        ? isLegalDevPlanningTarget(preview.state, type, target)
+        : isLegalPlanningTarget(preview.state, type, target);
 
       if (!isValidTarget) {
         return;
@@ -458,8 +567,8 @@ export function App() {
     if (targets) {
       const isValidTargets = targets.every((targetCoord) =>
         devOverride
-          ? isLegalDevTarget(preview.state, type, targetCoord)
-          : isLegalTarget(preview.state, type, targetCoord),
+          ? isLegalDevPlanningTarget(preview.state, type, targetCoord)
+          : isLegalPlanningTarget(preview.state, type, targetCoord),
       );
 
       if (!isValidTargets) {
@@ -526,8 +635,8 @@ export function App() {
 
     if (selectedAction === 'doubleSword') {
       const isValidTarget = selectedActionDevOverride
-        ? isLegalDevTarget(preview.state, selectedAction, coord)
-        : isLegalTarget(preview.state, selectedAction, coord);
+        ? isLegalDevPlanningTarget(preview.state, selectedAction, coord)
+        : isLegalPlanningTarget(preview.state, selectedAction, coord);
 
       if (!isValidTarget) {
         return;
@@ -570,7 +679,9 @@ export function App() {
     setHoveredEnemyId(null);
     setMode('planning');
     setPlayerAnimation('idle');
+    setEnemyAnimations({});
     setProjectile(null);
+    setArcMove(null);
     setEffects([]);
     setActiveStep(null);
     setIsLevelSelectOpen(false);
@@ -748,6 +859,7 @@ export function App() {
         playerResult.event,
         addEffect,
         setProjectile,
+        setArcMove,
         setDisplayState,
         sound,
         playPlayerAnimation,
@@ -764,9 +876,11 @@ export function App() {
         working,
         addEffect,
         setProjectile,
+        setArcMove,
         setDisplayState,
         sound,
         playPlayerAnimation,
+        playEnemyAnimation,
       );
       setDisplayState(enemyResult.state);
       await sleep(delayedEnemyAnimation ? 120 : enemyResult.events.length > 0 ? 500 : 220);
@@ -780,9 +894,11 @@ export function App() {
     setDisplayState(null);
     setPlan([]);
     setProjectile(null);
+    setArcMove(null);
     setActiveStep(null);
     setMode('planning');
     setPlayerAnimation('idle');
+    setEnemyAnimations({});
 
     if (working.player.hp <= 0) {
       setGame(working);
@@ -931,8 +1047,8 @@ export function App() {
               const isTarget =
                 selectedAction !== null &&
                 (selectedActionDevOverride
-                  ? isLegalDevTarget(preview.state, selectedAction, cell)
-                  : isLegalTarget(preview.state, selectedAction, cell)) &&
+                  ? isLegalDevPlanningTarget(preview.state, selectedAction, cell)
+                  : isLegalPlanningTarget(preview.state, selectedAction, cell)) &&
                 !(
                   selectedAction === 'doubleSword' &&
                   pendingDoubleSwordTarget !== null &&
@@ -1025,6 +1141,10 @@ export function App() {
 
           <g className="unit-layer">
             {visibleState.enemies.map((enemy) => {
+              if (arcMove?.variant === 'enemy' && arcMove.enemyId === enemy.id) {
+                return null;
+              }
+
               const isHovered = canShowEnemyHover && enemy.id === hoveredEnemyId;
               const enemyKind = enemy.kind ?? 'goblin';
               const enemyName = getEnemyName(enemy);
@@ -1038,6 +1158,7 @@ export function App() {
                   isHovered={isHovered}
                   key={enemy.id}
                   label={enemyName}
+                  sprite={getEnemySprite(enemyKind, enemyAnimations[enemy.id] ?? 'idle')}
                   stones={enemy.stones}
                   variant="enemy"
                   onPointerEnter={() => {
@@ -1049,13 +1170,17 @@ export function App() {
                 />
               );
             })}
-            <AnimatedToken
-              coord={visibleState.player.pos}
-              variant="player"
-              label="Gracz"
-              sprite={playerSprites[playerAnimation]}
-            />
+            {arcMove?.variant === 'player' ? null : (
+              <AnimatedToken
+                coord={visibleState.player.pos}
+                variant="player"
+                label="Gracz"
+                sprite={playerSprites[playerAnimation]}
+              />
+            )}
           </g>
+
+          {arcMove ? <ArcMoveToken move={arcMove} /> : null}
 
           <g className="effects-layer">
             {effects.map((effect) => (
@@ -1754,6 +1879,7 @@ function AnimatedToken({
   const point = useAnimatedPoint(target, TOKEN_ANIMATION_MS);
   const isOrc = variant === 'enemy' && enemyKind === 'orc';
   const isGnomeKing = variant === 'enemy' && enemyKind === 'gnomeKing';
+  const enemySpriteLayout = getEnemySpriteLayout(enemyKind);
   const gnomeKingCharge = isGnomeKing
     ? `${Math.min(stones ?? 0, GNOME_KING_STONES_REQUIRED)}/${GNOME_KING_STONES_REQUIRED}`
     : null;
@@ -1783,24 +1909,41 @@ function AnimatedToken({
           <image
             className="player-sprite"
             href={sprite ?? playerSprites.idle}
-            x="-18"
-            y="-26"
-            width="36"
-            height="36"
+            x={-PLAYER_SPRITE_SIZE / 2}
+            y={PLAYER_SPRITE_BASELINE_Y - PLAYER_SPRITE_SIZE}
+            width={PLAYER_SPRITE_SIZE}
+            height={PLAYER_SPRITE_SIZE}
             preserveAspectRatio="xMidYMid meet"
           />
         </>
       ) : (
         <>
-          {hoverEnabled ? <circle className="unit-hitbox" cx="0" cy="0" r={hitboxRadius} /> : null}
-          <circle className="unit-shadow" cx="0" cy="3.5" r={shadowRadius} />
-          <circle className="unit-body" cx="0" cy="0" r={bodyRadius} />
-          <circle
-            className="unit-highlight"
-            cx={highlightOffset.x}
-            cy={highlightOffset.y}
-            r={highlightRadius}
-          />
+          {sprite ? (
+            <>
+              {hoverEnabled ? <circle className="unit-hitbox" cx="0" cy="0" r={hitboxRadius} /> : null}
+              <image
+                className="enemy-sprite"
+                href={sprite}
+                x={enemySpriteLayout.x}
+                y={enemySpriteLayout.y}
+                width={enemySpriteLayout.size}
+                height={enemySpriteLayout.size}
+                preserveAspectRatio="xMidYMid meet"
+              />
+            </>
+          ) : (
+            <>
+              {hoverEnabled ? <circle className="unit-hitbox" cx="0" cy="0" r={hitboxRadius} /> : null}
+              <circle className="unit-shadow" cx="0" cy="3.5" r={shadowRadius} />
+              <circle className="unit-body" cx="0" cy="0" r={bodyRadius} />
+              <circle
+                className="unit-highlight"
+                cx={highlightOffset.x}
+                cy={highlightOffset.y}
+                r={highlightRadius}
+              />
+            </>
+          )}
           {gnomeKingCharge ? (
             <g className="enemy-charge-label">
               <rect x="-12.5" y="9.2" width="25" height="10" rx="3" />
@@ -1835,13 +1978,80 @@ function GhostToken({ coord, variant }: { coord: Coord; variant: 'player' | 'ene
   );
 }
 
+function ArcMoveToken({ move }: { move: ArcMoveEffect }) {
+  const from = hexToPoint(move.from);
+  const to = hexToPoint(move.to);
+  const motion = useProjectileMotion(from, to, PLAYER_ACTION_MS);
+  const enemyClass = move.variant === 'enemy' ? `enemy-${move.enemyKind ?? 'goblin'}` : '';
+  const enemySpriteLayout = getEnemySpriteLayout(move.enemyKind);
+
+  return (
+    <g className={`arc-move-token ${move.variant} ${enemyClass}`}>
+      <ellipse
+        className="arc-move-shadow"
+        cx={motion.ground.x}
+        cy={motion.ground.y + 6}
+        rx={7.8 * motion.shadowScale}
+        ry={3.2 * motion.shadowScale}
+        opacity={motion.shadowOpacity}
+      />
+      <g transform={`translate(${motion.point.x} ${motion.point.y}) scale(${0.92 + (motion.scale - 0.86) * 0.5})`}>
+        {move.variant === 'player' ? (
+          <image
+            className="player-sprite"
+            href={move.sprite ?? playerSprites.jump}
+            x={-PLAYER_SPRITE_SIZE / 2}
+            y={PLAYER_SPRITE_BASELINE_Y - PLAYER_SPRITE_SIZE}
+            width={PLAYER_SPRITE_SIZE}
+            height={PLAYER_SPRITE_SIZE}
+            preserveAspectRatio="xMidYMid meet"
+          />
+        ) : move.sprite ? (
+          <image
+            className="enemy-sprite"
+            href={move.sprite}
+            x={enemySpriteLayout.x}
+            y={enemySpriteLayout.y}
+            width={enemySpriteLayout.size}
+            height={enemySpriteLayout.size}
+            preserveAspectRatio="xMidYMid meet"
+          />
+        ) : (
+          <>
+            <circle className="unit-shadow" cx="0" cy="3.5" r="8" />
+            <circle className="unit-body" cx="0" cy="0" r="8.2" />
+            <circle className="unit-highlight" cx="-2.6" cy="-3" r="2.2" />
+          </>
+        )}
+      </g>
+    </g>
+  );
+}
+
 function Effect({ effect }: { effect: VisualEffect }) {
   const target = hexToPoint(effect.coord);
 
-  if ((effect.type === 'enemyAttack' || effect.type === 'fireball') && effect.source) {
+  if (effect.type === 'enemyAttack') {
+    return (
+      <g className="sword-flash-effect damage-flash-effect">
+        <polygon points={getHexPoints(target)} />
+      </g>
+    );
+  }
+
+  if (effect.type === 'arrowTrail' && effect.source) {
     const source = hexToPoint(effect.source);
     return (
-      <g className={`attack-effect ${effect.type === 'fireball' ? 'fireball' : 'enemy'}`}>
+      <g className="arrow-trajectory-effect">
+        <line x1={source.x} y1={source.y} x2={target.x} y2={target.y} />
+      </g>
+    );
+  }
+
+  if (effect.type === 'fireball' && effect.source) {
+    const source = hexToPoint(effect.source);
+    return (
+      <g className="attack-effect fireball">
         <line x1={source.x} y1={source.y} x2={target.x} y2={target.y} />
         <circle cx={target.x} cy={target.y} r="11" />
       </g>
@@ -1996,9 +2206,11 @@ async function animateEnemyEvents(
   before: GameState,
   addEffect: (effect: Omit<VisualEffect, 'id'>) => void,
   setProjectile: (projectile: ProjectileEffect | null) => void,
+  setArcMove: (move: ArcMoveEffect | null) => void,
   setDisplayState: (state: GameState) => void,
   sound: RetroSound,
   playPlayerAnimation: (animation: PlayerAnimation, duration?: number) => void,
+  playEnemyAnimation: (enemyId: string, animation: EnemyAnimation, duration?: number) => void,
 ): Promise<boolean> {
   let delayed = false;
   let animatedState = cloneGameState(before);
@@ -2008,31 +2220,61 @@ async function animateEnemyEvents(
       const movingEnemy = animatedState.enemies.find((enemy) => enemy.id === event.enemyId);
 
       if (movingEnemy) {
+        const isJumpMove = event.source ? hexDistance(event.source, event.target) > 1 : false;
+        playEnemyAnimation(movingEnemy.id, isJumpMove ? 'jump' : 'walk');
+
+        if (isJumpMove && event.source) {
+          setArcMove({
+            id: `${Date.now()}-${Math.random()}`,
+            from: event.source,
+            to: event.target,
+            variant: 'enemy',
+            enemyId: movingEnemy.id,
+            enemyKind: movingEnemy.kind,
+            sprite: getEnemySprite(movingEnemy.kind, 'jump'),
+          });
+          delayed = true;
+          await sleep(PLAYER_ACTION_MS);
+        }
+
         movingEnemy.pos = { ...event.target };
         setDisplayState(cloneGameState(animatedState));
+        if (isJumpMove) {
+          setArcMove(null);
+        }
         delayed = true;
-        await sleep(260);
+        await sleep(isJumpMove ? 90 : 260);
       }
     }
 
     if (event.type === 'enemyAttack' && event.target) {
       sound.playEnemyAttack();
+      if (event.enemyId) {
+        playEnemyAnimation(event.enemyId, 'attack');
+      }
       playPlayerAnimation('damage', 520);
       addEffect({ type: 'enemyAttack', coord: event.target, source: event.source });
     }
 
     if (event.type === 'enemyShoot' && event.target) {
       sound.playEnemyAttack();
+      if (event.enemyId) {
+        playEnemyAnimation(event.enemyId, 'attack');
+      }
 
       if (event.hitPlayer) {
         playPlayerAnimation('damage', 520);
       }
 
+      addEffect({ type: 'arrowTrail', coord: event.target, source: event.source });
       addEffect({ type: 'enemyAttack', coord: event.target, source: event.source });
     }
 
     if (event.type === 'enemyFireball' && event.target) {
       sound.playEnemyAttack();
+      if (event.enemyId) {
+        playEnemyAnimation(event.enemyId, 'attack');
+      }
 
       if (event.hitPlayer) {
         playPlayerAnimation('damage', 560);
@@ -2043,12 +2285,18 @@ async function animateEnemyEvents(
 
     if (event.type === 'enemyPickup' && event.target) {
       sound.playPickup();
+      if (event.enemyId) {
+        playEnemyAnimation(event.enemyId, 'pickup');
+      }
       addEffect({ type: 'pickup', coord: event.target });
     }
 
     if (event.type === 'enemyThrow' && event.source && event.target) {
       delayed = true;
       sound.playThrow();
+      if (event.enemyId) {
+        playEnemyAnimation(event.enemyId, 'throw');
+      }
       setProjectile({
         id: `${Date.now()}-${Math.random()}`,
         from: event.source,
@@ -2098,6 +2346,7 @@ async function animatePlayerAction(
   event: SimEvent,
   addEffect: (effect: Omit<VisualEffect, 'id'>, duration?: number) => void,
   setProjectile: (projectile: ProjectileEffect | null) => void,
+  setArcMove: (move: ArcMoveEffect | null) => void,
   setDisplayState: (state: GameState) => void,
   sound: RetroSound,
   playPlayerAnimation: (animation: PlayerAnimation, duration?: number) => void,
@@ -2111,14 +2360,23 @@ async function animatePlayerAction(
       playPlayerAnimation('damage', 420);
       addEffect({ type: 'impact', coord: event.target });
     }
-    await sleep(PLAYER_ACTION_MS);
     return;
   }
 
   if (event.type === 'jump') {
     sound.playMove();
     playPlayerAnimation('jump');
+    setDisplayState(before);
+    setArcMove({
+      id: `${Date.now()}-${Math.random()}`,
+      from: before.player.pos,
+      to: event.target ?? after.player.pos,
+      variant: 'player',
+      sprite: playerSprites.jump,
+    });
+    await sleep(PLAYER_ACTION_MS);
     setDisplayState(after);
+    setArcMove(null);
     if (event.hitPlayer && event.target) {
       sound.playImpact();
       playPlayerAnimation('damage', 420);
@@ -2131,13 +2389,22 @@ async function animatePlayerAction(
   if (event.type === 'pogoJump') {
     sound.playMove();
     playPlayerAnimation('pogo');
+    setDisplayState(before);
+    setArcMove({
+      id: `${Date.now()}-${Math.random()}`,
+      from: before.player.pos,
+      to: event.target ?? after.player.pos,
+      variant: 'player',
+      sprite: playerSprites.pogo,
+    });
+    await sleep(PLAYER_ACTION_MS);
     setDisplayState(after);
+    setArcMove(null);
     if (event.hitPlayer && event.target) {
       sound.playImpact();
       playPlayerAnimation('damage', 420);
       addEffect({ type: 'impact', coord: event.target });
     }
-    await sleep(PLAYER_ACTION_MS);
     return;
   }
 
@@ -2153,7 +2420,7 @@ async function animatePlayerAction(
 
   if (event.type === 'doubleSword' && event.targets?.length) {
     sound.playSword();
-    playPlayerAnimation('sword');
+    playPlayerAnimation('doubleSword');
 
     for (const target of event.targets) {
       addEffect({ type: 'swordFlash', coord: target });

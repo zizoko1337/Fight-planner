@@ -306,20 +306,38 @@ function canPlaceTrapAt(state: GameState, target: Coord): boolean {
   );
 }
 
-export function isLegalTarget(state: GameState, actionType: ActionType, target: Coord): boolean {
+interface TargetValidationOptions {
+  ignoreEnemyCollision?: boolean;
+}
+
+function shouldIgnoreEnemyCollision(actionType: ActionType, options: TargetValidationOptions): boolean {
+  return (
+    options.ignoreEnemyCollision === true &&
+    (actionType === 'move' || actionType === 'jump' || actionType === 'pogoJump')
+  );
+}
+
+function isLegalTargetInternal(
+  state: GameState,
+  actionType: ActionType,
+  target: Coord,
+  options: TargetValidationOptions = {},
+): boolean {
   if (!isInBounds(target)) {
     return false;
   }
 
+  const blocksMovement = !shouldIgnoreEnemyCollision(actionType, options) && hasEnemyAt(state.enemies, target);
+
   if (actionType === 'move') {
-    return hexDistance(state.player.pos, target) === 1 && !hasEnemyAt(state.enemies, target);
+    return hexDistance(state.player.pos, target) === 1 && !blocksMovement;
   }
 
   if (actionType === 'jump') {
     return (
       hasTrampolineAt(state.trampolines, state.player.pos) &&
       hexDistance(state.player.pos, target) === TRAMPOLINE_JUMP_RANGE &&
-      !hasEnemyAt(state.enemies, target)
+      !blocksMovement
     );
   }
 
@@ -327,7 +345,7 @@ export function isLegalTarget(state: GameState, actionType: ActionType, target: 
     return (
       (state.player.pogos ?? 0) > 0 &&
       hexDistance(state.player.pos, target) === TRAMPOLINE_JUMP_RANGE &&
-      !hasEnemyAt(state.enemies, target)
+      !blocksMovement
     );
   }
 
@@ -354,17 +372,32 @@ export function isLegalTarget(state: GameState, actionType: ActionType, target: 
   return false;
 }
 
-export function isLegalDevTarget(state: GameState, actionType: ActionType, target: Coord): boolean {
+export function isLegalTarget(state: GameState, actionType: ActionType, target: Coord): boolean {
+  return isLegalTargetInternal(state, actionType, target);
+}
+
+export function isLegalPlanningTarget(state: GameState, actionType: ActionType, target: Coord): boolean {
+  return isLegalTargetInternal(state, actionType, target, { ignoreEnemyCollision: true });
+}
+
+function isLegalDevTargetInternal(
+  state: GameState,
+  actionType: ActionType,
+  target: Coord,
+  options: TargetValidationOptions = {},
+): boolean {
   if (!isInBounds(target)) {
     return false;
   }
 
+  const blocksMovement = !shouldIgnoreEnemyCollision(actionType, options) && hasEnemyAt(state.enemies, target);
+
   if (actionType === 'move') {
-    return hexDistance(state.player.pos, target) === 1 && !hasEnemyAt(state.enemies, target);
+    return hexDistance(state.player.pos, target) === 1 && !blocksMovement;
   }
 
   if (actionType === 'jump' || actionType === 'pogoJump') {
-    return hexDistance(state.player.pos, target) === TRAMPOLINE_JUMP_RANGE && !hasEnemyAt(state.enemies, target);
+    return hexDistance(state.player.pos, target) === TRAMPOLINE_JUMP_RANGE && !blocksMovement;
   }
 
   if (actionType === 'sword' || actionType === 'doubleSword') {
@@ -384,6 +417,18 @@ export function isLegalDevTarget(state: GameState, actionType: ActionType, targe
   }
 
   return false;
+}
+
+export function isLegalDevTarget(state: GameState, actionType: ActionType, target: Coord): boolean {
+  return isLegalDevTargetInternal(state, actionType, target);
+}
+
+export function isLegalDevPlanningTarget(
+  state: GameState,
+  actionType: ActionType,
+  target: Coord,
+): boolean {
+  return isLegalDevTargetInternal(state, actionType, target, { ignoreEnemyCollision: true });
 }
 
 function triggerPlayerTrapAt(state: GameState, coord: Coord): boolean {
@@ -415,11 +460,16 @@ function triggerEnemyTrapAt(state: GameState, enemy: EnemyState, coord: Coord): 
 export function applyPlayerAction(
   state: GameState,
   action: PlannedAction,
+  options: TargetValidationOptions = {},
 ): { state: GameState; event: SimEvent } {
   const next = cloneGameState(state);
   const devOverride = action.devOverride === true;
 
-  if (action.type === 'move' && action.target && isLegalTarget(next, 'move', action.target)) {
+  if (
+    action.type === 'move' &&
+    action.target &&
+    isLegalTargetInternal(next, 'move', action.target, options)
+  ) {
     const source = { ...next.player.pos };
     next.player.pos = { ...action.target };
     const hitTrap = triggerPlayerTrapAt(next, action.target);
@@ -432,8 +482,8 @@ export function applyPlayerAction(
   if (
     action.type === 'jump' &&
     action.target &&
-    (isLegalTarget(next, 'jump', action.target) ||
-      (devOverride && isLegalDevTarget(next, 'jump', action.target)))
+    (isLegalTargetInternal(next, 'jump', action.target, options) ||
+      (devOverride && isLegalDevTargetInternal(next, 'jump', action.target, options)))
   ) {
     const source = { ...next.player.pos };
     next.player.pos = { ...action.target };
@@ -447,8 +497,8 @@ export function applyPlayerAction(
   if (
     action.type === 'pogoJump' &&
     action.target &&
-    (isLegalTarget(next, 'pogoJump', action.target) ||
-      (devOverride && isLegalDevTarget(next, 'pogoJump', action.target)))
+    (isLegalTargetInternal(next, 'pogoJump', action.target, options) ||
+      (devOverride && isLegalDevTargetInternal(next, 'pogoJump', action.target, options)))
   ) {
     const source = { ...next.player.pos };
     next.player.pogos = Math.max(0, next.player.pogos - 1);
@@ -740,7 +790,7 @@ export function getPlanPreview(
   const playerPath: Coord[] = [{ ...working.player.pos }];
 
   for (const action of plan) {
-    const playerResult = applyPlayerAction(working, action);
+    const playerResult = applyPlayerAction(working, action, { ignoreEnemyCollision: true });
     working = playerResult.state;
     playerPath.push({ ...working.player.pos });
 
