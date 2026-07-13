@@ -184,6 +184,17 @@ interface DragState {
   moved: boolean;
 }
 
+interface BoardPointerState {
+  x: number;
+  y: number;
+}
+
+interface PinchState {
+  centerX: number;
+  centerY: number;
+  distance: number;
+}
+
 interface VisualEffect {
   id: string;
   type: 'swordFlash' | 'impact' | 'enemyAttack' | 'arrowTrail' | 'fireball' | 'pickup' | 'wait';
@@ -295,6 +306,22 @@ function getEnemySpriteLayout(enemyKind: EnemyState['kind'] | undefined) {
   };
 }
 
+function getPinchState(pointers: Map<number, BoardPointerState>): PinchState | null {
+  const activePointers = Array.from(pointers.values());
+
+  if (activePointers.length < 2) {
+    return null;
+  }
+
+  const [first, second] = activePointers;
+
+  return {
+    centerX: (first.x + second.x) / 2,
+    centerY: (first.y + second.y) / 2,
+    distance: Math.hypot(second.x - first.x, second.y - first.y),
+  };
+}
+
 export function App() {
   const cells = useMemo(() => getAllCells(), []);
   const boardBounds = useMemo(() => getBoardBounds(cells), [cells]);
@@ -322,8 +349,13 @@ export function App() {
   const [status, setStatus] = useState('Zaplanuj 5 akcji');
   const [maxUnlockedLevel, setMaxUnlockedLevel] = useState(() => readUnlockedLevel());
   const [isLevelSelectOpen, setIsLevelSelectOpen] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(() =>
+    typeof window === 'undefined' ? false : window.matchMedia('(max-width: 760px)').matches,
+  );
   const boardRef = useRef<SVGSVGElement | null>(null);
   const dragRef = useRef<DragState | null>(null);
+  const boardPointersRef = useRef<Map<number, BoardPointerState>>(new Map());
+  const pinchRef = useRef<PinchState | null>(null);
   const previousHandRef = useRef<ActionCard[] | null>(null);
   const suppressCellClickRef = useRef(false);
   const effectCounter = useRef(0);
@@ -411,6 +443,16 @@ export function App() {
     () => getCameraViewBox(camera, boardBounds),
     [boardBounds, camera],
   );
+
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 760px)');
+    const updateMobileView = () => setIsMobileView(query.matches);
+
+    updateMobileView();
+    query.addEventListener('change', updateMobileView);
+
+    return () => query.removeEventListener('change', updateMobileView);
+  }, []);
 
   useEffect(() => {
     if (!canShowEnemyHover) {
@@ -713,94 +755,38 @@ export function App() {
     setCamera(getInitialCamera(boardBounds));
   }
 
-  function handleBoardPointerDown(event: PointerEvent<SVGSVGElement>) {
-    if (event.button !== 0) {
-      return;
-    }
-
-    if (selectedAction !== null) {
-      suppressCellClickRef.current = false;
-      return;
-    }
-
-    boardRef.current?.setPointerCapture(event.pointerId);
-    dragRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      lastX: event.clientX,
-      lastY: event.clientY,
-      moved: false,
-    };
-    setIsDraggingBoard(true);
-  }
-
-  function handleBoardPointerMove(event: PointerEvent<SVGSVGElement>) {
-    const drag = dragRef.current;
-    const rect = boardRef.current?.getBoundingClientRect();
-
-    if (!drag || drag.pointerId !== event.pointerId || !rect) {
-      return;
-    }
-
-    const dx = event.clientX - drag.lastX;
-    const dy = event.clientY - drag.lastY;
-    const totalDistance = Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY);
-
-    if (totalDistance > 5) {
-      drag.moved = true;
-      suppressCellClickRef.current = true;
-    }
-
-    if (dx !== 0 || dy !== 0) {
-      setCamera((current) => {
-        const currentViewBox = getCameraViewBox(current, boardBounds);
-
-        return clampCamera(
-          {
-            ...current,
-            center: {
-              x: current.center.x - dx * (currentViewBox.width / rect.width),
-              y: current.center.y - dy * (currentViewBox.height / rect.height),
-            },
-          },
-          boardBounds,
-        );
-      });
-    }
-
-    drag.lastX = event.clientX;
-    drag.lastY = event.clientY;
-  }
-
-  function endBoardDrag(event: PointerEvent<SVGSVGElement>) {
-    const drag = dragRef.current;
-
-    if (drag?.pointerId === event.pointerId) {
-      boardRef.current?.releasePointerCapture(event.pointerId);
-      dragRef.current = null;
-      setIsDraggingBoard(false);
-
-      if (drag.moved) {
-        window.setTimeout(() => {
-          suppressCellClickRef.current = false;
-        }, 0);
-      }
-    }
-  }
-
-  function handleBoardWheel(event: WheelEvent<SVGSVGElement>) {
-    event.preventDefault();
-
+  function panCameraByScreenDelta(dx: number, dy: number) {
     const rect = boardRef.current?.getBoundingClientRect();
 
     if (!rect) {
       return;
     }
 
-    const ratioX = (event.clientX - rect.left) / rect.width;
-    const ratioY = (event.clientY - rect.top) / rect.height;
-    const zoomMultiplier = Math.exp(-event.deltaY * 0.0015);
+    setCamera((current) => {
+      const currentViewBox = getCameraViewBox(current, boardBounds);
+
+      return clampCamera(
+        {
+          ...current,
+          center: {
+            x: current.center.x - dx * (currentViewBox.width / rect.width),
+            y: current.center.y - dy * (currentViewBox.height / rect.height),
+          },
+        },
+        boardBounds,
+      );
+    });
+  }
+
+  function zoomCameraAtScreenPoint(clientX: number, clientY: number, zoomMultiplier: number) {
+    const rect = boardRef.current?.getBoundingClientRect();
+
+    if (!rect || !Number.isFinite(zoomMultiplier) || zoomMultiplier <= 0) {
+      return;
+    }
+
+    const ratioX = (clientX - rect.left) / rect.width;
+    const ratioY = (clientY - rect.top) / rect.height;
 
     setCamera((current) => {
       const currentViewBox = getCameraViewBox(current, boardBounds);
@@ -825,6 +811,138 @@ export function App() {
         boardBounds,
       );
     });
+  }
+
+  function handleBoardPointerDown(event: PointerEvent<SVGSVGElement>) {
+    if (event.button !== 0) {
+      return;
+    }
+
+    boardPointersRef.current.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+    });
+
+    if (boardPointersRef.current.size >= 2) {
+      boardPointersRef.current.forEach((_, pointerId) => {
+        try {
+          boardRef.current?.setPointerCapture(pointerId);
+        } catch {
+          // Some browsers only allow capture from the pointer's own event.
+        }
+      });
+      pinchRef.current = getPinchState(boardPointersRef.current);
+      dragRef.current = null;
+      setIsDraggingBoard(false);
+      suppressCellClickRef.current = true;
+      event.preventDefault();
+      return;
+    }
+
+    if (isMobileView && selectedAction === null) {
+      setHoveredEnemyId(null);
+    }
+
+    if (selectedAction !== null) {
+      suppressCellClickRef.current = false;
+      return;
+    }
+
+    boardRef.current?.setPointerCapture(event.pointerId);
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      lastX: event.clientX,
+      lastY: event.clientY,
+      moved: false,
+    };
+    setIsDraggingBoard(true);
+  }
+
+  function handleBoardPointerMove(event: PointerEvent<SVGSVGElement>) {
+    if (boardPointersRef.current.has(event.pointerId)) {
+      boardPointersRef.current.set(event.pointerId, {
+        x: event.clientX,
+        y: event.clientY,
+      });
+    }
+
+    if (pinchRef.current && boardPointersRef.current.size >= 2) {
+      const nextPinch = getPinchState(boardPointersRef.current);
+
+      if (nextPinch && pinchRef.current.distance > 0) {
+        const previousPinch = pinchRef.current;
+        const zoomMultiplier = nextPinch.distance / previousPinch.distance;
+
+        zoomCameraAtScreenPoint(nextPinch.centerX, nextPinch.centerY, zoomMultiplier);
+        panCameraByScreenDelta(nextPinch.centerX - previousPinch.centerX, nextPinch.centerY - previousPinch.centerY);
+        pinchRef.current = nextPinch;
+        suppressCellClickRef.current = true;
+        event.preventDefault();
+      }
+
+      return;
+    }
+
+    const drag = dragRef.current;
+
+    if (!drag || drag.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const dx = event.clientX - drag.lastX;
+    const dy = event.clientY - drag.lastY;
+    const totalDistance = Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY);
+
+    if (totalDistance > 5) {
+      drag.moved = true;
+      suppressCellClickRef.current = true;
+    }
+
+    if (dx !== 0 || dy !== 0) {
+      panCameraByScreenDelta(dx, dy);
+    }
+
+    drag.lastX = event.clientX;
+    drag.lastY = event.clientY;
+  }
+
+  function endBoardDrag(event: PointerEvent<SVGSVGElement>) {
+    const drag = dragRef.current;
+    boardPointersRef.current.delete(event.pointerId);
+
+    try {
+      boardRef.current?.releasePointerCapture(event.pointerId);
+    } catch {
+      // Ignore release errors for pointers that were not captured.
+    }
+
+    if (boardPointersRef.current.size < 2) {
+      pinchRef.current = null;
+    }
+
+    if (drag?.pointerId === event.pointerId) {
+      dragRef.current = null;
+      setIsDraggingBoard(false);
+
+      if (drag.moved) {
+        window.setTimeout(() => {
+          suppressCellClickRef.current = false;
+        }, 0);
+      }
+    }
+
+    if (boardPointersRef.current.size === 0 && suppressCellClickRef.current) {
+      window.setTimeout(() => {
+        suppressCellClickRef.current = false;
+      }, 0);
+    }
+  }
+
+  function handleBoardWheel(event: WheelEvent<SVGSVGElement>) {
+    const zoomMultiplier = Math.exp(-event.deltaY * 0.0015);
+    zoomCameraAtScreenPoint(event.clientX, event.clientY, zoomMultiplier);
   }
 
   async function runSimulation() {
@@ -923,6 +1041,24 @@ export function App() {
     setStatus(working.enemies.length === 0 ? 'Wszystkie poziomy wyczyszczone' : 'Plan wykonany');
   }
 
+  function renderPlanSlot(index: number) {
+    const action = plan[index];
+
+    return (
+      <div
+        className={[
+          'plan-slot',
+          action ? 'is-filled' : '',
+          activeStep === index ? 'is-active' : '',
+        ].join(' ')}
+        key={index}
+      >
+        <span>{index + 1}</span>
+        <strong>{action ? getActionLabel(action) : '-'}</strong>
+      </div>
+    );
+  }
+
   return (
     <main className="game-shell">
       <section className="board-area">
@@ -964,22 +1100,7 @@ export function App() {
         </div>
 
         <aside className="plan-rail" aria-label="Planowane akcje">
-          {Array.from({ length: PLAN_LENGTH }).map((_, index) => {
-            const action = plan[index];
-            return (
-              <div
-                className={[
-                  'plan-slot',
-                  action ? 'is-filled' : '',
-                  activeStep === index ? 'is-active' : '',
-                ].join(' ')}
-                key={index}
-              >
-                <span>{index + 1}</span>
-                <strong>{action ? getActionLabel(action) : '-'}</strong>
-              </div>
-            );
-          })}
+          {Array.from({ length: PLAN_LENGTH }).map((_, index) => renderPlanSlot(index))}
         </aside>
 
         {DEV_ALL_CARDS_ENABLED ? (
@@ -1166,7 +1287,17 @@ export function App() {
                       setHoveredEnemyId(enemy.id);
                     }
                   }}
-                  onPointerLeave={() => setHoveredEnemyId((current) => (current === enemy.id ? null : current))}
+                  onPointerLeave={() => {
+                    if (!isMobileView) {
+                      setHoveredEnemyId((current) => (current === enemy.id ? null : current));
+                    }
+                  }}
+                  onPointerDown={(event) => {
+                    if (isMobileView && canShowEnemyHover) {
+                      event.stopPropagation();
+                      setHoveredEnemyId(enemy.id);
+                    }
+                  }}
                 />
               );
             })}
@@ -1192,35 +1323,40 @@ export function App() {
       </section>
 
       <section className="planner-bar">
+        <div className="mobile-plan-strip" aria-label="Planowane akcje">
+          {Array.from({ length: PLAN_LENGTH }).map((_, index) => renderPlanSlot(index))}
+        </div>
         <div className="card-row">
-          {renderedCards.map((card, index) => {
-            const isAvailable = availableActions.includes(card.type);
-            const isExiting = exitingCards.some((exitingCard) => exitingCard.id === card.id);
-            const activeIndex = actionHand.findIndex((handCard) => handCard.id === card.id);
-            const shortcutLabel = getShortcutLabel(activeIndex);
-            const style = getCardStyle(index, renderedCards.length);
-            return (
-              <button
-                className={[
-                  'action-card',
-                  `action-card-${card.type}`,
-                  selectedCardId === card.id ? 'is-selected' : '',
-                  isExiting ? 'is-exiting' : '',
-                ].join(' ')}
-                disabled={isExiting || !canPlan || !isAvailable || plan.length >= PLAN_LENGTH}
-                key={isExiting ? `exit-${card.id}` : card.id}
-                aria-label={card.label}
-                style={style}
-                title={card.label}
-                type="button"
-                onClick={() => handleCardClick(card)}
-              >
-                <img className="card-art" src={card.image} alt="" draggable={false} />
-                {card.badge ? <CardBadge type={card.badge} /> : null}
-                {shortcutLabel ? <span className="card-shortcut">{shortcutLabel}</span> : null}
-              </button>
-            );
-          })}
+          <div className="card-fan">
+            {renderedCards.map((card, index) => {
+              const isAvailable = availableActions.includes(card.type);
+              const isExiting = exitingCards.some((exitingCard) => exitingCard.id === card.id);
+              const activeIndex = actionHand.findIndex((handCard) => handCard.id === card.id);
+              const shortcutLabel = getShortcutLabel(activeIndex);
+              const style = getCardStyle(index, renderedCards.length);
+              return (
+                <button
+                  className={[
+                    'action-card',
+                    `action-card-${card.type}`,
+                    selectedCardId === card.id ? 'is-selected' : '',
+                    isExiting ? 'is-exiting' : '',
+                  ].join(' ')}
+                  disabled={isExiting || !canPlan || !isAvailable || plan.length >= PLAN_LENGTH}
+                  key={isExiting ? `exit-${card.id}` : card.id}
+                  aria-label={card.label}
+                  style={style}
+                  title={card.label}
+                  type="button"
+                  onClick={() => handleCardClick(card)}
+                >
+                  <img className="card-art" src={card.image} alt="" draggable={false} />
+                  {card.badge ? <CardBadge type={card.badge} /> : null}
+                  {shortcutLabel ? <span className="card-shortcut">{shortcutLabel}</span> : null}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="planner-actions">
@@ -1619,16 +1755,20 @@ function getShortcutLabel(index: number): number | null {
 function getCardStyle(index: number, count: number): CSSProperties {
   const center = (count - 1) / 2;
   const offset = index - center;
-  const rotation = offset * 7;
-  const hoverRotation = offset * 3.2;
-  const lift = Math.abs(offset) * 8;
-  const spread = offset * 7;
+  const normalizedOffset = center === 0 ? 0 : offset / center;
+  const maxAngle = Math.min(42, Math.max(0, (count - 1) * 5.2));
+  const rotation = normalizedOffset * maxAngle;
+  const radians = (rotation * Math.PI) / 180;
+  const arcRadius = 108;
+  const spread = Math.sin(radians) * arcRadius;
+  const lift = (1 - Math.cos(radians)) * arcRadius;
+  const hoverRotation = rotation * 0.72;
 
   return {
-    '--card-rotation': `${rotation}deg`,
-    '--card-hover-rotation': `${hoverRotation}deg`,
-    '--card-lift': `${lift}px`,
-    '--card-spread': `${spread}px`,
+    '--card-rotation': `${rotation.toFixed(2)}deg`,
+    '--card-hover-rotation': `${hoverRotation.toFixed(2)}deg`,
+    '--card-lift': `${lift.toFixed(2)}px`,
+    '--card-spread': `${spread.toFixed(2)}px`,
     '--card-delay': `${Math.max(0, index) * 38}ms`,
   } as CSSProperties;
 }
@@ -1858,6 +1998,7 @@ function AnimatedToken({
   isHovered = false,
   variant,
   label,
+  onPointerDown,
   onPointerEnter,
   onPointerLeave,
   sprite,
@@ -1870,6 +2011,7 @@ function AnimatedToken({
   isHovered?: boolean;
   variant: 'player' | 'enemy';
   label: string;
+  onPointerDown?: (event: PointerEvent<SVGGElement>) => void;
   onPointerEnter?: () => void;
   onPointerLeave?: () => void;
   sprite?: string;
@@ -1901,6 +2043,7 @@ function AnimatedToken({
       ].join(' ')}
       transform={`translate(${point.x} ${point.y})`}
       aria-label={label}
+      onPointerDown={hoverEnabled ? onPointerDown : undefined}
       onPointerEnter={hoverEnabled ? onPointerEnter : undefined}
       onPointerLeave={hoverEnabled ? onPointerLeave : undefined}
     >
