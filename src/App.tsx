@@ -60,6 +60,8 @@ const ENEMY_SPRITE_BASELINE_Y = 7;
 const MAGE_SPRITE_SIZE = ENEMY_SPRITE_SIZE * 1.2;
 const CAVALRY_SPRITE_SIZE = ENEMY_SPRITE_SIZE * 2;
 const CAVALRY_SPRITE_OFFSET = { x: -3, y: 15 };
+const GNOME_KING_SPRITE_SIZE = ENEMY_SPRITE_SIZE * 2;
+const GNOME_KING_SPRITE_OFFSET = { x: 0, y: 3 };
 const SWORD_CARD_IDS = ['sword-1', 'sword-2'];
 const UNLOCKED_LEVEL_STORAGE_KEY = 'fight-planner-unlocked-level';
 // DEV: set to false or remove the panel block to hide the all-cards test controls.
@@ -104,6 +106,12 @@ const enemySprites: Partial<Record<EnemyState['kind'], Partial<Record<EnemyAnima
     jump: '/sprites/gnomejump.gif',
     pickup: '/sprites/gnomepickup.gif',
     throw: '/sprites/gnomestonethrow.gif',
+  },
+  gnomeKing: {
+    idle: '/sprites/gnomekingidle.gif',
+    jump: '/sprites/gnomekingjump.gif',
+    pickup: '/sprites/gnomekingpickup.gif',
+    throw: '/sprites/gnomekingthrow.gif',
   },
   skeletonArcher: {
     idle: '/sprites/skeletonidle.gif',
@@ -274,6 +282,18 @@ function getActionTargets(action: PlannedAction): Coord[] {
   return action.target ? [action.target] : [];
 }
 
+function fillPlanWithWait(plan: PlannedAction[]): PlannedAction[] {
+  const normalizedPlan = plan.slice(0, PLAN_LENGTH);
+
+  return [
+    ...normalizedPlan,
+    ...Array.from({ length: PLAN_LENGTH - normalizedPlan.length }).map((_, index) => ({
+      id: `auto-wait-${Date.now()}-${index}`,
+      type: 'wait' as const,
+    })),
+  ];
+}
+
 function getEnemySprite(
   enemyKind: EnemyState['kind'] | undefined,
   animation: EnemyAnimation = 'idle',
@@ -296,6 +316,14 @@ function getEnemySpriteLayout(enemyKind: EnemyState['kind'] | undefined) {
       size: MAGE_SPRITE_SIZE,
       x: -MAGE_SPRITE_SIZE / 2,
       y: ENEMY_SPRITE_BASELINE_Y - MAGE_SPRITE_SIZE,
+    };
+  }
+
+  if (enemyKind === 'gnomeKing') {
+    return {
+      size: GNOME_KING_SPRITE_SIZE,
+      x: -GNOME_KING_SPRITE_SIZE / 2 + GNOME_KING_SPRITE_OFFSET.x,
+      y: ENEMY_SPRITE_BASELINE_Y - GNOME_KING_SPRITE_SIZE + GNOME_KING_SPRITE_OFFSET.y,
     };
   }
 
@@ -438,6 +466,9 @@ export function App() {
     return getEnemyHintCells(hoveredEnemy, visibleState, cells);
   }, [canShowEnemyHover, cells, hoveredEnemyId, visibleState]);
   const canPlan = mode === 'planning' && game.player.hp > 0;
+  const canRunSimulation = mode === 'planning' && game.player.hp > 0;
+  const runButtonLabel =
+    plan.length < PLAN_LENGTH ? 'Fill with wait and simulate' : 'Symuluj';
   const isDefeat = game.player.hp <= 0;
   const cameraViewBox = useMemo(
     () => getCameraViewBox(camera, boardBounds),
@@ -516,7 +547,7 @@ export function App() {
       }
 
       if (event.key === ' ' || event.code === 'Space') {
-        if (mode === 'planning' && plan.length === PLAN_LENGTH && game.player.hp > 0) {
+        if (canRunSimulation) {
           event.preventDefault();
           void runSimulation();
         }
@@ -543,7 +574,7 @@ export function App() {
     window.addEventListener('keydown', handleKeyDown);
 
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [actionHand, selectedCardId, canPlan, plan.length, availableActions, mode, game.player.hp]);
+  }, [actionHand, selectedCardId, canPlan, plan.length, availableActions, canRunSimulation]);
 
   function addEffect(effect: Omit<VisualEffect, 'id'>, duration = 520) {
     effectCounter.current += 1;
@@ -946,11 +977,11 @@ export function App() {
   }
 
   async function runSimulation() {
-    if (mode !== 'planning' || plan.length !== PLAN_LENGTH || game.player.hp <= 0) {
+    if (!canRunSimulation) {
       return;
     }
 
-    const planToRun = [...plan];
+    const planToRun = fillPlanWithWait(plan);
     const sound = getSound();
     let working = cloneGameState(game);
     sound.playSimulationStart();
@@ -960,6 +991,7 @@ export function App() {
     setSelectedActionDevOverride(false);
     setPendingDoubleSwordTarget(null);
     setHoveredEnemyId(null);
+    setPlan(planToRun);
     setDisplayState(working);
     setStatus('Symulacja');
     await sleep(120);
@@ -1364,9 +1396,9 @@ export function App() {
             className="run-button"
             type="button"
             onClick={runSimulation}
-            disabled={mode !== 'planning' || plan.length !== PLAN_LENGTH || game.player.hp <= 0}
+            disabled={!canRunSimulation}
           >
-            Symuluj
+            {runButtonLabel}
           </button>
         </div>
       </section>
@@ -2363,7 +2395,9 @@ async function animateEnemyEvents(
       const movingEnemy = animatedState.enemies.find((enemy) => enemy.id === event.enemyId);
 
       if (movingEnemy) {
-        const isJumpMove = event.source ? hexDistance(event.source, event.target) > 1 : false;
+        const isJumpMove = Boolean(
+          event.source && (movingEnemy.kind === 'gnomeKing' || hexDistance(event.source, event.target) > 1),
+        );
         playEnemyAnimation(movingEnemy.id, isJumpMove ? 'jump' : 'walk');
 
         if (isJumpMove && event.source) {

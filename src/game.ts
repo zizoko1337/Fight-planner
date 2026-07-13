@@ -457,6 +457,17 @@ function triggerEnemyTrapAt(state: GameState, enemy: EnemyState, coord: Coord): 
   };
 }
 
+function isMovementAction(actionType: ActionType): actionType is 'move' | 'jump' | 'pogoJump' {
+  return actionType === 'move' || actionType === 'jump' || actionType === 'pogoJump';
+}
+
+function createWaitEvent(state: GameState): { state: GameState; event: SimEvent } {
+  return {
+    state,
+    event: { type: 'wait', target: { ...state.player.pos } },
+  };
+}
+
 export function applyPlayerAction(
   state: GameState,
   action: PlannedAction,
@@ -464,6 +475,15 @@ export function applyPlayerAction(
 ): { state: GameState; event: SimEvent } {
   const next = cloneGameState(state);
   const devOverride = action.devOverride === true;
+
+  if (
+    action.target &&
+    isMovementAction(action.type) &&
+    !options.ignoreEnemyCollision &&
+    hasEnemyAt(next.enemies, action.target)
+  ) {
+    return createWaitEvent(next);
+  }
 
   if (
     action.type === 'move' &&
@@ -631,16 +651,10 @@ export function applyPlayerAction(
   }
 
   if (action.type === 'wait' && action.target && isLegalTarget(next, 'wait', action.target)) {
-    return {
-      state: next,
-      event: { type: 'wait', target: { ...next.player.pos } },
-    };
+    return createWaitEvent(next);
   }
 
-  return {
-    state: next,
-    event: { type: action.type === 'wait' ? 'wait' : 'wait', target: { ...next.player.pos } },
-  };
+  return createWaitEvent(next);
 }
 
 export function applyEnemyTurn(
@@ -651,6 +665,7 @@ export function applyEnemyTurn(
   const events: SimEvent[] = [];
   const enemies = next.enemies.map((enemy) => ({ ...enemy, pos: { ...enemy.pos } }));
   const occupied = new Set(enemies.map((enemy) => coordKey(enemy.pos)));
+  occupied.add(coordKey(next.player.pos));
 
   for (const enemy of enemies) {
     if (enemy.hp <= 0 || enemy.kind !== 'mage') {
