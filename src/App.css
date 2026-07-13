@@ -21,6 +21,12 @@ body {
   overflow: hidden;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
 button,
 input,
 textarea,
@@ -1340,6 +1346,7 @@ button {
 @media (max-width: 760px) {
   .board-area {
     padding: 8px;
+    padding-bottom: 214px;
   }
 
   .hud {
@@ -1378,6 +1385,10 @@ button {
   }
 
   .planner-bar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
     grid-template-columns: minmax(0, 1fr);
     gap: 6px;
     max-height: none;
@@ -1478,5 +1489,16 @@ button {
     min-height: 42px;
     padding: 6px 10px;
     font-size: 0.82rem;
+  }
+}
+
+@supports (height: 100dvh) {
+  body {
+    min-height: 100dvh;
+  }
+
+  .game-shell {
+    height: 100dvh;
+    min-height: 100dvh;
   }
 }
