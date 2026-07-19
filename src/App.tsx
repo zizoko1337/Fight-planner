@@ -62,6 +62,9 @@ const CAVALRY_SPRITE_SIZE = ENEMY_SPRITE_SIZE * 2;
 const CAVALRY_SPRITE_OFFSET = { x: -3, y: 15 };
 const GNOME_KING_SPRITE_SIZE = ENEMY_SPRITE_SIZE * 2;
 const GNOME_KING_SPRITE_OFFSET = { x: 0, y: 3 };
+const STONE_FEATURE_SIZE = 10;
+const POGO_FEATURE_SIZE = 13;
+const PROJECTILE_STONE_SIZE = 7;
 const SWORD_CARD_IDS = ['sword-1', 'sword-2'];
 const UNLOCKED_LEVEL_STORAGE_KEY = 'fight-planner-unlocked-level';
 // DEV: set to false or remove the panel block to hide the all-cards test controls.
@@ -132,9 +135,9 @@ const enemySprites: Partial<Record<EnemyState['kind'], Partial<Record<EnemyAnima
 };
 
 const gridFeatureArt: Record<GridFeatureType, string | null> = {
-  stone: null,
-  trampoline: null,
-  pogo: null,
+  stone: '/sprites/stone.png',
+  trampoline: '/sprites/trampoline.png',
+  pogo: '/sprites/pogo.png',
   trapPickup: null,
   placedTrap: null,
 };
@@ -155,6 +158,7 @@ interface Point {
 interface ProjectileMotion {
   point: Point;
   ground: Point;
+  progress: number;
   scale: number;
   shadowScale: number;
   shadowOpacity: number;
@@ -205,7 +209,15 @@ interface PinchState {
 
 interface VisualEffect {
   id: string;
-  type: 'swordFlash' | 'impact' | 'enemyAttack' | 'arrowTrail' | 'fireball' | 'pickup' | 'wait';
+  type:
+    | 'swordFlash'
+    | 'impact'
+    | 'enemyAttack'
+    | 'arrowTrail'
+    | 'fireball'
+    | 'pickup'
+    | 'trampolineJump'
+    | 'wait';
   coord: Coord;
   source?: Coord;
 }
@@ -377,6 +389,7 @@ export function App() {
   const [status, setStatus] = useState('Zaplanuj 5 akcji');
   const [maxUnlockedLevel, setMaxUnlockedLevel] = useState(() => readUnlockedLevel());
   const [isLevelSelectOpen, setIsLevelSelectOpen] = useState(false);
+  const [isFillWaitConfirmOpen, setIsFillWaitConfirmOpen] = useState(false);
   const [isMobileView, setIsMobileView] = useState(() =>
     typeof window === 'undefined' ? false : window.matchMedia('(max-width: 760px)').matches,
   );
@@ -432,6 +445,15 @@ export function App() {
     () => new Set((visibleState.placedTraps ?? []).map(coordKey)),
     [visibleState.placedTraps],
   );
+  const activeTrampolineJumpKeys = useMemo(
+    () =>
+      new Set(
+        effects
+          .filter((effect) => effect.type === 'trampolineJump')
+          .map((effect) => coordKey(effect.coord)),
+      ),
+    [effects],
+  );
   const plannedPathPoints = preview.playerPath.map(hexToPoint);
   const plannedActionMarkers = useMemo<PlannedActionMarker[]>(
     () =>
@@ -467,6 +489,7 @@ export function App() {
   }, [canShowEnemyHover, cells, hoveredEnemyId, visibleState]);
   const canPlan = mode === 'planning' && game.player.hp > 0;
   const canRunSimulation = mode === 'planning' && game.player.hp > 0;
+  const missingPlanActions = Math.max(0, PLAN_LENGTH - plan.length);
   const runButtonLabel =
     plan.length < PLAN_LENGTH ? 'Fill with wait and simulate' : 'Symuluj';
   const isDefeat = game.player.hp <= 0;
@@ -549,7 +572,7 @@ export function App() {
       if (event.key === ' ' || event.code === 'Space') {
         if (canRunSimulation) {
           event.preventDefault();
-          void runSimulation();
+          requestSimulation();
         }
 
         return;
@@ -751,6 +774,7 @@ export function App() {
     setPendingDoubleSwordTarget(null);
     setHoveredEnemyId(null);
     setMode('planning');
+    setIsFillWaitConfirmOpen(false);
     setPlayerAnimation('idle');
     setEnemyAnimations({});
     setProjectile(null);
@@ -976,6 +1000,24 @@ export function App() {
     zoomCameraAtScreenPoint(event.clientX, event.clientY, zoomMultiplier);
   }
 
+  function requestSimulation() {
+    if (!canRunSimulation) {
+      return;
+    }
+
+    if (plan.length < PLAN_LENGTH) {
+      setIsFillWaitConfirmOpen(true);
+      return;
+    }
+
+    void runSimulation();
+  }
+
+  function confirmFillWaitAndSimulate() {
+    setIsFillWaitConfirmOpen(false);
+    void runSimulation();
+  }
+
   async function runSimulation() {
     if (!canRunSimulation) {
       return;
@@ -991,6 +1033,7 @@ export function App() {
     setSelectedActionDevOverride(false);
     setPendingDoubleSwordTarget(null);
     setHoveredEnemyId(null);
+    setIsFillWaitConfirmOpen(false);
     setPlan(planToRun);
     setDisplayState(working);
     setStatus('Symulacja');
@@ -1241,13 +1284,15 @@ export function App() {
           ) : null}
 
           <g className="feature-layer">
-            {(visibleState.trampolines ?? []).map((trampoline) => (
-              <GridFeature
-                coord={trampoline}
-                key={`trampoline-${coordKey(trampoline)}`}
-                type="trampoline"
-              />
-            ))}
+            {(visibleState.trampolines ?? [])
+              .filter((trampoline) => !activeTrampolineJumpKeys.has(coordKey(trampoline)))
+              .map((trampoline) => (
+                <GridFeature
+                  coord={trampoline}
+                  key={`trampoline-${coordKey(trampoline)}`}
+                  type="trampoline"
+                />
+              ))}
             {visibleState.stones.map((stone) => (
               <GridFeature coord={stone} key={`stone-${coordKey(stone)}`} type="stone" />
             ))}
@@ -1395,13 +1440,38 @@ export function App() {
           <button
             className="run-button"
             type="button"
-            onClick={runSimulation}
+            onClick={requestSimulation}
             disabled={!canRunSimulation}
           >
             {runButtonLabel}
           </button>
         </div>
       </section>
+
+      {isFillWaitConfirmOpen && canRunSimulation ? (
+        <div className="defeat-modal-backdrop" role="presentation">
+          <div
+            aria-labelledby="fill-wait-confirm-title"
+            aria-modal="true"
+            className="defeat-modal fill-wait-confirm-modal"
+            role="dialog"
+          >
+            <h2 id="fill-wait-confirm-title">Start simulation?</h2>
+            <p>
+              You planned {plan.length} of {PLAN_LENGTH} moves. The remaining {missingPlanActions}{' '}
+              {missingPlanActions === 1 ? 'action' : 'actions'} will be filled with Wait.
+            </p>
+            <div className="modal-button-row">
+              <button type="button" onClick={confirmFillWaitAndSimulate}>
+                Start simulation
+              </button>
+              <button type="button" onClick={() => setIsFillWaitConfirmOpen(false)}>
+                Keep planning
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {isDefeat && !isLevelSelectOpen ? (
         <div className="defeat-modal-backdrop" role="presentation">
@@ -1492,6 +1562,8 @@ function CardBadge({ type }: { type: NonNullable<ActionCard['badge']> }) {
 function GridFeature({ coord, type }: { coord: Coord; type: GridFeatureType }) {
   const center = hexToPoint(coord);
   const art = gridFeatureArt[type];
+  const artSize =
+    type === 'stone' ? STONE_FEATURE_SIZE : type === 'pogo' ? POGO_FEATURE_SIZE : 20;
   const labelParts = gridFeatureLabels[type].split(' ');
   const [imageFailed, setImageFailed] = useState(false);
   const shouldShowArt = Boolean(art) && !imageFailed;
@@ -1511,10 +1583,10 @@ function GridFeature({ coord, type }: { coord: Coord; type: GridFeatureType }) {
           href={art ?? undefined}
           onError={() => setImageFailed(true)}
           preserveAspectRatio="xMidYMid meet"
-          x="-10"
-          y="-10"
-          width="20"
-          height="20"
+          x={-artSize / 2}
+          y={-artSize / 2}
+          width={artSize}
+          height={artSize}
         />
       ) : (
         <text className="grid-feature-label" dominantBaseline="middle" textAnchor="middle" x="0" y="0">
@@ -2241,6 +2313,22 @@ function Effect({ effect }: { effect: VisualEffect }) {
     );
   }
 
+  if (effect.type === 'trampolineJump') {
+    return (
+      <g className="trampoline-jump-effect" transform={`translate(${target.x} ${target.y})`}>
+        <image
+          className="trampoline-jump-art"
+          href="/sprites/trampolinejump.gif"
+          preserveAspectRatio="xMidYMid meet"
+          x="-10"
+          y="-10"
+          width="20"
+          height="20"
+        />
+      </g>
+    );
+  }
+
   return (
     <g className={`pulse-effect ${effect.type}`} transform={`translate(${target.x} ${target.y})`}>
       <circle cx="0" cy="0" r="8" />
@@ -2275,16 +2363,23 @@ function ProjectileStone({ from: fromCoord, target }: { from: Coord; target: Coo
         className="projectile-shadow"
         cx={motion.ground.x}
         cy={motion.ground.y + 6}
-        rx={4.8 * motion.shadowScale}
-        ry={2.1 * motion.shadowScale}
+        rx={2.4 * motion.shadowScale}
+        ry={1.05 * motion.shadowScale}
         opacity={motion.shadowOpacity}
       />
       <g
         className="projectile-stone"
-        transform={`translate(${motion.point.x} ${motion.point.y}) scale(${motion.scale})`}
+        transform={`translate(${motion.point.x} ${motion.point.y}) rotate(${motion.progress * 720}) scale(${motion.scale})`}
       >
-        <circle cx="0" cy="0" r="4.3" />
-        <circle className="projectile-highlight" cx="-1.4" cy="-1.6" r="1.1" />
+        <image
+          className="projectile-stone-art"
+          href="/sprites/stone.png"
+          preserveAspectRatio="xMidYMid meet"
+          x={-PROJECTILE_STONE_SIZE / 2}
+          y={-PROJECTILE_STONE_SIZE / 2}
+          width={PROJECTILE_STONE_SIZE}
+          height={PROJECTILE_STONE_SIZE}
+        />
       </g>
     </>
   );
@@ -2333,6 +2428,7 @@ function getProjectileMotion(from: Point, to: Point, progress: number): Projecti
       x: ground.x,
       y: ground.y - arcHeight * lift,
     },
+    progress,
     scale: 0.86 + lift * 0.44,
     shadowScale: 1 - lift * 0.34,
     shadowOpacity: 0.34 - lift * 0.18,
@@ -2379,7 +2475,7 @@ function useAnimatedPoint(target: Point, duration: number, initial?: Point): Poi
 async function animateEnemyEvents(
   events: SimEvent[],
   before: GameState,
-  addEffect: (effect: Omit<VisualEffect, 'id'>) => void,
+  addEffect: (effect: Omit<VisualEffect, 'id'>, duration?: number) => void,
   setProjectile: (projectile: ProjectileEffect | null) => void,
   setArcMove: (move: ArcMoveEffect | null) => void,
   setDisplayState: (state: GameState) => void,
@@ -2401,6 +2497,10 @@ async function animateEnemyEvents(
         playEnemyAnimation(movingEnemy.id, isJumpMove ? 'jump' : 'walk');
 
         if (isJumpMove && event.source) {
+          if (hasTrampolineAt(animatedState.trampolines, event.source)) {
+            addEffect({ type: 'trampolineJump', coord: event.source }, PLAYER_ACTION_MS);
+          }
+
           setArcMove({
             id: `${Date.now()}-${Math.random()}`,
             from: event.source,
@@ -2543,6 +2643,7 @@ async function animatePlayerAction(
   if (event.type === 'jump') {
     sound.playMove();
     playPlayerAnimation('jump');
+    addEffect({ type: 'trampolineJump', coord: before.player.pos }, PLAYER_ACTION_MS);
     setDisplayState(before);
     setArcMove({
       id: `${Date.now()}-${Math.random()}`,

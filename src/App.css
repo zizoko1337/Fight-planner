@@ -45,8 +45,8 @@ button {
   min-height: 100vh;
   overflow: hidden;
   background:
-    radial-gradient(circle at 12% 18%, rgba(41, 101, 160, 0.18), transparent 26%),
-    linear-gradient(135deg, #111418 0%, #191d22 46%, #111315 100%);
+    radial-gradient(circle at 12% 18%, rgba(88, 176, 214, 0.16), transparent 28%),
+    linear-gradient(135deg, #071723 0%, #0d2b3c 48%, #06131d 100%);
 }
 
 .board-area {
@@ -134,9 +134,10 @@ button {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
   background:
-    linear-gradient(180deg, rgba(25, 31, 37, 0.92), rgba(14, 17, 19, 0.96)),
-    #15191d;
-  box-shadow: inset 0 0 55px rgba(0, 0, 0, 0.42);
+    radial-gradient(circle at 48% 42%, rgba(108, 199, 232, 0.2), transparent 42%),
+    linear-gradient(180deg, rgba(48, 133, 164, 0.94), rgba(21, 81, 111, 0.98)),
+    #174f6e;
+  box-shadow: inset 0 0 58px rgba(0, 22, 36, 0.54);
   cursor: grab;
   touch-action: none;
   user-select: none;
@@ -280,8 +281,8 @@ button {
 }
 
 .hex-cell {
-  fill: #252b30;
-  stroke: rgba(238, 231, 211, 0.13);
+  fill: #1f5e36;
+  stroke: rgba(161, 223, 167, 0.2);
   stroke-width: 0.85;
   cursor: inherit;
   transition:
@@ -291,45 +292,45 @@ button {
 }
 
 .hex-cell:nth-child(3n) {
-  fill: #23292f;
+  fill: #266f3f;
 }
 
 .hex-cell:hover {
-  fill: #313a42;
+  fill: #327d4c;
 }
 
 .hex-cell.has-stone {
-  fill: #2b302d;
+  fill: #31593e;
 }
 
 .hex-cell.has-trampoline {
-  fill: #2d3547;
-  stroke: rgba(126, 198, 255, 0.36);
+  fill: #276453;
+  stroke: rgba(142, 226, 255, 0.55);
 }
 
 .hex-cell.has-pogo {
-  fill: #342d42;
-  stroke: rgba(212, 162, 255, 0.34);
+  fill: #315a47;
+  stroke: rgba(212, 162, 255, 0.44);
 }
 
 .hex-cell.has-trap-pickup {
-  fill: #3c3327;
-  stroke: rgba(255, 204, 120, 0.4);
+  fill: #5c6531;
+  stroke: rgba(255, 218, 124, 0.52);
 }
 
 .hex-cell.has-placed-trap {
-  fill: #3a2525;
-  stroke: rgba(255, 94, 94, 0.48);
+  fill: #5b4639;
+  stroke: rgba(255, 94, 94, 0.58);
 }
 
 .hex-cell.is-planned {
-  fill: #263447;
+  fill: #245c5c;
   stroke: rgba(76, 162, 255, 0.55);
 }
 
 .hex-cell.is-targetable {
   cursor: pointer;
-  fill: #2b4056;
+  fill: #286d66;
   stroke: #66b6ff;
   stroke-width: 1.8;
 }
@@ -794,6 +795,15 @@ button {
   animation: sword-field-flash 360ms ease-out forwards;
 }
 
+.trampoline-jump-effect {
+  pointer-events: none;
+}
+
+.trampoline-jump-art {
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
 .pulse-effect {
   pointer-events: none;
 }
@@ -827,17 +837,10 @@ button {
   fill: rgba(0, 0, 0, 0.32);
 }
 
-.projectile-stone circle {
-  fill: #a59a88;
-  stroke: #efe2c6;
-  stroke-width: 1.1;
+.projectile-stone-art {
   filter: drop-shadow(0 0 5px rgba(239, 226, 198, 0.7));
-}
-
-.projectile-stone .projectile-highlight {
-  fill: #efe2c6;
-  stroke: none;
-  filter: none;
+  image-rendering: pixelated;
+  pointer-events: none;
 }
 
 .planner-bar {
@@ -1144,6 +1147,49 @@ button {
 
 .defeat-modal button:hover {
   background: #96382f;
+}
+
+.fill-wait-confirm-modal {
+  border-color: rgba(240, 211, 122, 0.48);
+  text-align: center;
+}
+
+.fill-wait-confirm-modal h2 {
+  color: #f0d37a;
+}
+
+.fill-wait-confirm-modal p {
+  max-width: 360px;
+  margin: 0;
+  color: #e9edf0;
+  font-size: 0.94rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.modal-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.fill-wait-confirm-modal button {
+  background: #273848;
+}
+
+.fill-wait-confirm-modal button:hover {
+  background: #36536b;
+}
+
+.fill-wait-confirm-modal button:first-child {
+  border-color: rgba(239, 196, 92, 0.44);
+  background: #7b5a1e;
+  color: #fff5d7;
+}
+
+.fill-wait-confirm-modal button:first-child:hover {
+  background: #956d24;
 }
 
 .level-select-modal {
